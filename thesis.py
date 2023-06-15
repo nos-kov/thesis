@@ -23,8 +23,19 @@ if __name__ == '__main__':
         token = token_file.readline()
 
     data = get_user_data(token, user_id, ya_token)
+    maximum = {}
+    counter = 0
     for element in data['response']['items']:
-        pprint(element['id'])
+        for picture in element['sizes']:
+            
+            maximum[picture['height']] = []
+            maximum.update({picture['height']: [picture['url'] , element['likes']]})
+        keymax = max(maximum.keys())
+        r = requests.get(maximum[keymax][0], allow_redirects=True)
+        name = str(maximum[keymax][1]['count']) + '.jpg' 
+        open( name, 'wb').write(r.content)
+
+            #pprint(element['id'])
 
 
 
