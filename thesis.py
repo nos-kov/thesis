@@ -1,4 +1,5 @@
 import requests
+import os
 
 from pprint import pprint
 
@@ -15,7 +16,14 @@ def get_user_data(token, user_id, ya_token):
     return data
 
 if __name__ == '__main__':
-        
+
+    # creating temp directory to store photos
+    current_directory = os.getcwd()
+    final_directory = os.path.join(current_directory, r'temp')
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
+
+
     user_id = input("Enter user_id:")
     ya_token = input("Enter Yandex.Disk's token:")
 
@@ -23,9 +31,11 @@ if __name__ == '__main__':
         token = token_file.readline()
 
     data = get_user_data(token, user_id, ya_token)
-    maximum = {}
-    counter = 0
+    
+    
     for element in data['response']['items']:
+        maximum = {}
+        pprint(element)
         for picture in element['sizes']:
             
             maximum[picture['height']] = []
@@ -33,9 +43,8 @@ if __name__ == '__main__':
         keymax = max(maximum.keys())
         r = requests.get(maximum[keymax][0], allow_redirects=True)
         name = str(maximum[keymax][1]['count']) + '.jpg' 
-        open( name, 'wb').write(r.content)
+        open( os.path.join(final_directory, name), 'wb').write(r.content)
 
-            #pprint(element['id'])
 
 
 
