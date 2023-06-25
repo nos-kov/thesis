@@ -1,0 +1,1 @@
+prior to running please run "pip install tqdm" in bash terminal
