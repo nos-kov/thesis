@@ -61,7 +61,7 @@ def get_user_data(token, user_id):
 
 
 def create_directory():
-    ''' Creates directory for temporary storage of downloaded photos '''
+    ''' Creates directory for temporary storage of downloaded photos. '''
     current_directory = os.getcwd()
     final_directory = os.path.join(current_directory, r'temp')
     if not os.path.exists(final_directory):
