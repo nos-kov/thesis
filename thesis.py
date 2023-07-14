@@ -1,63 +1,10 @@
-import json
-import requests
-import os
-import sys
+from vkclass import VKdownload
+from yaclass import YaUploader
 from tqdm import tqdm
+import configparser
 
-from contextlib import suppress
-
-
-class YaUploader:
-    def __init__(self, token: str):
-        self.token = token
-
-    def upload(self, file_path: str, disk_path: str):
-        """Uploads files to Ya.Disk"""
-        
-        headers = {
-
-            'Content-Type': 'application/json',
-            'Authorization': 'OAuth {}'.format(self.token)
-
-        }
-        files_url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
-        params = {"path": disk_path, "overwrite": "True"}
-        response = requests.get(files_url, headers=headers, params=params)
-        response_data = response.json()
-        href = response_data["href"]
-
-        response = requests.put(href, data=open(file_path, 'rb'))
-    
-    def create_folder(self, folder_name):
-        """ Creates a folder for the upload to Ya Disk"""
-
-        headers = {
-
-            'Content-Type': 'application/json',
-            'Authorization': 'OAuth {}'.format(self.token)
-
-        }
-        folder_url = "https://cloud-api.yandex.net/v1/disk/resources"
-        params = {"path": folder_name}
-        response = requests.put(folder_url, headers=headers, params=params)
-        response_data_folder = response.json()
-
-
-def get_user_data(token, user_id):
-    ''' Connects to VK API and gets JSON data from response '''
-    url = 'https://api.vk.com/method/photos.get'
-    params = {
-        'owner_id': user_id,
-        'access_token': token,
-        'album_id': 'profile',
-        'extended': '1',
-        'photo_sizes': '1',
-        'v': '5.131'
-        }
-
-    response = requests.get(url, params=params)
-    data = response.json()
-    return data
+import os
+import glob
 
 
 def create_directory():
@@ -69,55 +16,44 @@ def create_directory():
     return final_directory
 
 
-def download_photos(data, final_directory):
-    ''' Actually downloads photos through API and saves to the Temp folder '''
-    with suppress(Exception):
-        if data['error']:
-            print("Some response errors popped up. Program terminated.")
-            sys.exit()
-    
-    for element in tqdm(data['response']['items'], desc="Downloading photos.."):
-
-        maximum = {}
-        file_info = {}
-        output_json = []
-
-        for picture in element['sizes']:
-                   
-            maximum[picture['height']] = []
-            maximum.update({picture['height']: [picture['url'], element['likes'], element['date']]})
-
-        keymax = max(maximum.keys())
-        r = requests.get(maximum[keymax][0], allow_redirects=True)
-        name = str(maximum[keymax][1]['count']) + ("_") + str(maximum[keymax][2]) + '.jpg' 
-        open(os.path.join(final_directory, name), 'wb').write(r.content)
-        file_info['file_name'] = name
-        file_info['size'] = os.path.getsize(os.path.join(final_directory, name))
-        output_json.append(file_info)
-    with open('output.json', 'w', encoding='utf-8') as f:
-        json.dump(output_json, f, ensure_ascii=False, indent=4)
+def cleanup():
+    ''' Delete temp dir '''
+    current_directory = os.getcwd()
+    final_directory = os.path.join(current_directory, r'temp')
+    files = glob.glob(final_directory + '\\*')
+    for f in files:
+        os.remove(f)
+    os.rmdir(final_directory)
 
 
 if __name__ == '__main__':
 
-    create_directory()
+    urls = {}
 
-    user_id = input("Enter user_id:")
+    user_id = input("Enter user_id or screen name:")
+    threshold = input(
+        "Enter number of photos you'd like to limit your selection with:")
     ya_token = input("Enter Yandex.Disk's token:")
     ya_folder_name = input("Enter name for new Yandex.Disk's folder:")
+    config = configparser.ConfigParser()
+    config.read("token.ini")
+    token = config["VK"]["token"]
 
-    with open("token.txt", 'r') as token_file:
-        token = token_file.readline()
+    download = VKdownload(token)
+    if not user_id.isnumeric():
+        data = download.get_user_data(
+            token, download.get_id_by_scrname(user_id, token))
+    else:
+        data = download.get_user_data(token, user_id)
 
-    data = get_user_data(token, user_id)
-
-    download_photos(data, create_directory())
+    urls = download.get_photos_url(data, create_directory(), int(threshold))
 
     path_to_file = os.path.join(os.getcwd(), 'temp')
     uploader = YaUploader(ya_token)
     uploader.create_folder(ya_folder_name)
-    list_of_photos = os.listdir(path_to_file)
-    for photo in tqdm(list_of_photos, desc="Uploading photos to Yandex Disk"):
-        path_to_file = os.path.join(os.getcwd(), 'temp', photo)
-        result = uploader.upload(path_to_file, (ya_folder_name + "/" + photo))
+    for name, url in tqdm(urls.items(), desc="Uploading photos.."):
+        result = uploader.upload(
+            url, (ya_folder_name + "/" + name.replace(":", "")))
+        #url[:url.rfind("?size")]
+    cleanup()
 print("Execution completed")

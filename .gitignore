@@ -1,3 +1,7 @@
 **/.vscode/
 temp/
-token.txt
+__pycache__
+token.ini
+old_func.py
+thesis - Copy.py
+thesis - Copy (2).py
