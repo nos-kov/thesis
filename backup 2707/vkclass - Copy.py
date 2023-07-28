@@ -2,6 +2,7 @@ import requests
 import json
 import sys
 from tqdm import tqdm
+import os
 from contextlib import suppress
 from datetime import datetime
 
@@ -44,6 +45,7 @@ class VKdownload:
     def get_photos_url(
         self,
         data,
+        final_directory,
             threshold: int):
 
         ''' Gets URL of photos to be downloaded '''
@@ -83,12 +85,14 @@ class VKdownload:
                 name = str(maximum[keymax][1]['count']) + '.jpg'
             clear_name = name.replace(":", "")
             urls[name] = maximum[keymax][0]
-            head_response = requests.head(maximum[keymax][0])
+            r = requests.get(maximum[keymax][0], allow_redirects=True)
+            open(os.path.join(final_directory, clear_name), 'wb').write(r.content)
             file_info['file_name'] = clear_name
-            file_info['size'] = head_response.headers.get('Content-Length', -1)
+            file_info['size'] = os.path.getsize(
+                os.path.join(final_directory, clear_name))
             output_json.append(file_info)
             counter += 1
-            if counter > threshold:
+            if counter >= threshold:
                 break
         with open('output.json', 'w', encoding='utf-8') as f:
             json.dump(output_json, f, ensure_ascii=False, indent=4)

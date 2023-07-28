@@ -46,11 +46,14 @@ if __name__ == '__main__':
     else:
         data = download.get_user_data(token, user_id)
 
-    urls = download.get_photos_url(data, int(threshold))
+    urls = download.get_photos_url(data, create_directory(), int(threshold))
 
+    path_to_file = os.path.join(os.getcwd(), 'temp')
     uploader = YaUploader(ya_token)
     uploader.create_folder(ya_folder_name)
     for name, url in tqdm(urls.items(), desc="Uploading photos.."):
         result = uploader.upload(
             url, (ya_folder_name + "/" + name.replace(":", "")))
+        #url[:url.rfind("?size")]
+    cleanup()
 print("Execution completed")

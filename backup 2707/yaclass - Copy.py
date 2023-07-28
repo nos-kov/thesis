@@ -16,8 +16,11 @@ class YaUploader:
         }
         files_url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
         params = {"path": disk_path, "url": file_path, "overwrite": "True"}
-        response = requests.post(files_url, headers=headers, params=params)
+        response = requests.get(files_url, headers=headers, params=params)
         response_data = response.json()
+        href = response_data["href"]
+
+        response = requests.put(href)
     
     def create_folder(self, folder_name):
         """ Creates a folder for the upload to Ya Disk"""
@@ -31,3 +34,4 @@ class YaUploader:
         folder_url = "https://cloud-api.yandex.net/v1/disk/resources"
         params = {"path": folder_name}
         response = requests.put(folder_url, headers=headers, params=params)
+        #response_data_folder = response.json()
