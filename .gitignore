@@ -1,5 +1,6 @@
 **/.vscode/
 temp/
+backup 2707/
 __pycache__
 token.ini
 old_func.py
